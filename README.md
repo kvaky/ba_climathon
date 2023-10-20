@@ -1,3 +1,8 @@
 # ba_climathon
 
-Test
+## Run backend
+
+```bash
+cd api
+docker compose up -d
+```
