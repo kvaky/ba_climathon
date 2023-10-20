@@ -1,5 +1,5 @@
 services:
-  web: 
+  api: 
     build:
       context: app
     # flask requires SIGINT to stop gracefully
@@ -7,3 +7,6 @@ services:
     stop_signal: SIGINT
     ports:
       - '8000:8000'
+    # Map the app volume to the host volume
+    volumes:
+      - ./app:/app
