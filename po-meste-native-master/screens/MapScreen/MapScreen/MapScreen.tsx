@@ -18,13 +18,14 @@ import {
   StyleSheet,
   View,
 } from 'react-native'
-import MapView, { Marker, Region } from 'react-native-maps'
+import MapView, { Marker, Region, Geojson } from 'react-native-maps'
 
 import {
   useHealthData,
   useRekolaData,
   useSlovnaftbajkData,
   useTierData,
+  useHeatData,
 } from '@hooks'
 
 import {
@@ -177,6 +178,30 @@ const markerIcons: { [index: string]: markerIcon } = {
 
 //#endregion icons
 
+const myPlace = {
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [17.10, 48.15],
+            [17.12, 48.18],
+            [17.14, 48.11],
+          ]
+        ]
+      },
+      "properties": {
+        "prop0": "value0",
+        "prop1": { "this": "that" }
+      }
+    }
+  ]
+}
+
+
 export default function MapScreen() {
   const netInfo = useNetInfo()
   const vehiclesContext = useContext(GlobalStateContext)
@@ -278,6 +303,23 @@ export default function MapScreen() {
   }, [selectedMicromobilityStation, selectedMhdStation, selectedChargerStation])
 
   const isFocused = useIsFocused()
+
+  const [heatData, setHeatData] = useState(null);
+  useEffect(() => {
+    // Define a function to fetch data
+    const fetchData = async () => {
+      try {
+        const response = await fetch('http://localhost:8000');
+        const result = await response.json();
+        setHeatData(result);
+      } catch (error) {
+        console.error('Error fetching data:', error);
+      }
+    };
+
+    // Call the function when the component mounts
+    fetchData();
+  }, []); // Empty dependency array means this effect runs once when the component mounts
 
   const refetch = useCallback(() => {
     refetchTier()
@@ -574,9 +616,14 @@ export default function MapScreen() {
         }}
         onMapLoaded={() => SplashScreen.hideAsync()}
       >
-        <Polygon>
-          
-        </Polygon>
+        {
+          heatData && <Geojson
+          geojson={heatData}
+          strokeColor="red"
+          fillColor="rgba(255, 0, 0, 0.5)"
+          strokeWidth={2}
+        >
+        </Geojson>}
         {vehiclesContext.vehicleTypes?.find(
           (vehicleType) => vehicleType.id === VehicleType.mhd
         )?.show &&
