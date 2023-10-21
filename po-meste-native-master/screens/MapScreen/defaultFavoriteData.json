@@ -1,0 +1,18 @@
+{
+  "favoritePlaces": [
+    {
+      "id": "home",
+      "isHardSetName": true,
+      "icon": "home",
+      "name": "Domov"
+    },
+    {
+      "id": "work",
+      "isHardSetName": true,
+      "icon": "work",
+      "name": "Práca"
+    }
+  ],
+  "favoriteStops": [],
+  "history": []
+}
