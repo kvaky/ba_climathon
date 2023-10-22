@@ -1,24 +1,40 @@
 from flask import Flask
 import geopandas as gpd
-from shapely.geometry import Polygon
+from utils import (
+    load_grids,
+    get_interpolated_data,
+    get_heat_index,
+    adjust_heat_index,
+    categorize_heat_index,
+    transform_polygons,
+)
+from rasterio.features import shapes
+from shapely.geometry import shape
+import geopandas as gpd
 
+
+grids_path = "data/grids.json"
 app = Flask(__name__)
 
-# Create a GeoDataFrame with two polygons
-gdf = gpd.GeoDataFrame(
-    {
-        "geometry": [
-            Polygon([(16.95, 48.0), (16.95, 48.02), (16.97, 48.02), (16.97, 48.0)]),
-            Polygon([(16.955, 47.99), (16.955, 48.01), (16.965, 48.01), (16.965, 47.99)]),
-        ]
-    },
-    crs="EPSG:4326"
+# Calculate heat index
+grids, idx_to_row_col = load_grids(grids_path)
+grid_temperature, grid_humidity = get_interpolated_data(grids)
+heat_index = get_heat_index(grid_temperature, grid_humidity)
+adjusted_heat_index = adjust_heat_index(heat_index, grids["terrain"])
+categorized_heat_index = categorize_heat_index(adjusted_heat_index)
+
+# Create GeoDataFrame with polygons
+# For some reason we need to transpose the array (to fix)
+shape_gen = ((shape(s), v) for s, v in shapes(categorized_heat_index.T.astype("uint8")))
+polygons = gpd.GeoDataFrame(
+    dict(zip(["geometry", "class"], zip(*shape_gen))), crs="EPSG:4326"
 )
+transformed_polygons = transform_polygons(polygons, grids)
 
 
 @app.route("/")
 def hello():
-    return gdf.to_json()
+    return transformed_polygons.to_json()
 
 
 if __name__ == "__main__":
