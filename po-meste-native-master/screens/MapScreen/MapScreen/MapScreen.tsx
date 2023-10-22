@@ -304,7 +304,52 @@ export default function MapScreen() {
 
   const isFocused = useIsFocused()
 
+  const mockData = { "type": "FeatureCollection", "features": [{ "id": "0", "type": "Feature", "properties": {}, "geometry": { "type": "Polygon", "coordinates": [[[17.106, 48.147], [17.107, 48.149],  [17.108, 48.150], [17.109, 48.148], [17.106, 48.147]]]}}]}
+  const vec2Copy = (out, a) => {
+    out[0] = a[0]
+    out[1] = a[1]
+    return out
+  }
+  
+  const chaikingSmooth = (input, output) => {
+    if (!Array.isArray(output))
+        output = []
+
+    if (input.length>0)
+        output.push(vec2Copy([0, 0], input[0]))
+    for (var i=0; i<input.length-1; i++) {
+        var p0 = input[i]
+        var p1 = input[i+1]
+        var p0x = p0[0],
+            p0y = p0[1],
+            p1x = p1[0],
+            p1y = p1[1]
+
+        var Q = [ 0.75 * p0x + 0.25 * p1x, 0.75 * p0y + 0.25 * p1y ]
+        var R = [ 0.25 * p0x + 0.75 * p1x, 0.25 * p0y + 0.75 * p1y ]
+        output.push(Q)
+        output.push(R)
+    }
+    if (input.length > 1)
+        output.push(vec2Copy([0, 0], input[ input.length-1 ]))
+    return output
+  }
+  
+  const smoothOutPolygons = (geojsonData) => {
+    const smoothGeojsonData = geojsonData
+    smoothGeojsonData.features = smoothGeojsonData.features.map((polygon) => {
+      const newPolygon = polygon
+      const newCoordinates = [chaikingSmooth(polygon.geometry.coordinates[0], null)]
+      const newGeometry = polygon.geometry
+      newGeometry.coordinates = newCoordinates
+      newPolygon.geometry = newGeometry
+      return newPolygon
+    })
+    return smoothGeojsonData
+  }
+
   const [heatData, setHeatData] = useState(null);
+
   useEffect(() => {
     // Define a function to fetch data
     const fetchData = async () => {
@@ -619,9 +664,9 @@ export default function MapScreen() {
         {
           heatData && <Geojson
           geojson={heatData}
-          strokeColor="red"
-          fillColor="rgba(255, 0, 0, 0.5)"
-          strokeWidth={2}
+          strokeColor="rgba(255, 0, 0, 0.5)"
+          fillColor="rgba(255, 0, 0, 0.3)"
+          strokeWidth={4}
         >
         </Geojson>}
         {vehiclesContext.vehicleTypes?.find(
